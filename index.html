@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enactus Mini Game-4</title>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); padding: 20px; color: #333; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        
+        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .round-box { background: var(--primary); color: white; padding: 5px 15px; border-radius: 4px; display: inline-block; font-weight: bold; }
+
+        .input-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .team-input { border: 1px solid #ccc; padding: 10px; border-radius: 6px; text-align: center; }
+        .team-input label { display: block; font-weight: bold; margin-bottom: 5px; }
+        .team-input input { width: 50px; padding: 5px; text-align: center; font-weight: bold; text-transform: uppercase; border: 2px solid #ddd; }
+
+        .controls { text-align: center; margin-bottom: 30px; }
+        button { padding: 10px 20px; cursor: pointer; font-weight: bold; border: none; border-radius: 4px; margin: 0 5px; }
+        .btn-go { background: var(--success); color: white; }
+        .btn-reset { background: #e74c3c; color: white; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+
+        .victory { display: none; background: #d4edda; border: 2px solid #c3e6cb; color: #155724; padding: 15px; text-align: center; margin-bottom: 20px; border-radius: 8px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #f8f9fa; }
+        .leader { background: #fff3cd; }
+        
+        .history-section { margin-top: 40px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Enactus Mini Game-4</h1>
+        <div class="round-box">Round: <span id="roundDisp">1</span></div>
+    </div>
+
+    <div id="winMsg" class="victory">
+        <h2 style="margin:0">Game Over!</h2>
+        <p id="winnerLine"></p>
+        <p>Condition Met: All 8 teams have unequal scores.</p>
+    </div>
+
+    <div class="input-grid" id="grid"></div>
+
+    <div class="controls">
+        <button id="subBtn" class="btn-go" onclick="runRound()">Process Round</button>
+        <button class="btn-reset" onclick="reset()">Reset All</button>
+    </div>
+
+    <h2>📊 Scoreboard</h2>
+    <table id="scoresTable">
+        <thead>
+            <tr><th>Rank</th><th>Team</th><th>Score</th></tr>
+        </thead>
+        <tbody id="scoreBody"></tbody>
+    </table>
+
+    <div class="history-section">
+        <h2>📂 Team Decision History</h2>
+        <table id="histTable">
+            <thead><tr id="histHead"><th>Team</th></tr></thead>
+            <tbody id="histBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let round = 1;
+let done = false;
+let teams = Array.from({length: 8}, (_, i) => ({ id: i+1, name: "Team "+(i+1), score: 0, log: [] }));
+
+function setup() {
+    const grid = document.getElementById('grid');
+    grid.innerHTML = '';
+    teams.forEach(t => {
+        grid.innerHTML += `<div class="team-input"><label>${t.name}</label><input id="t${t.id}" maxlength="1" placeholder="?"></div>`;
+    });
+    updateUI();
+}
+
+function runRound() {
+    if (done) return;
+
+    // 1. Collect
+    let selections = {};
+    let counts = { X: 0, Y: 0, Z: 0 };
+    for (let i = 1; i <= 8; i++) {
+        let val = document.getElementById('t'+i).value.toUpperCase().trim();
+        if (!['X','Y','Z'].includes(val)) {
+            alert("Error: Team "+i+" must enter X, Y, or Z");
+            return;
+        }
+        selections[i] = val;
+        counts[val]++;
+    }
+
+    // 2. Logic: Find least option among those picked
+    let activeCounts = Object.entries(counts).filter(([opt, count]) => count > 0);
+    let minNum = Math.min(...activeCounts.map(([opt, count]) => count));
+    let winners = activeCounts.filter(([opt, count]) => count === minNum).map(([opt, count]) => opt);
+
+    // 3. Award Points
+    teams.forEach(t => {
+        let choice = selections[t.id];
+        let pts = 0;
+        if (winners.includes(choice)) {
+            let n = counts[choice];
+            if (n === 1) pts = 3;
+            else if (n === 2) pts = 2;
+            else if (n === 3) pts = 1;
+            else if (n >= 4) pts = 0;
+        }
+        t.score += pts;
+        t.log.push({ choice, pts });
+    });
+
+    // 4. Update
+    updateUI();
+    checkEnd();
+    if (!done) {
+        round++;
+        document.getElementById('roundDisp').innerText = round;
+        teams.forEach(t => document.getElementById('t'+t.id).value = '');
+    }
+}
+
+function updateUI() {
+    // Scoreboard
+    let sorted = [...teams].sort((a,b) => b.score - a.score);
+    const sBody = document.getElementById('scoreBody');
+    sBody.innerHTML = sorted.map((t, i) => `
+        <tr class="${i === 0 && t.score > 0 ? 'leader' : ''}">
+            <td>${i+1}</td><td>${t.name}</td><td>${t.score}</td>
+        </tr>`).join('');
+
+    // History Header
+    const hHead = document.getElementById('histHead');
+    if (hHead.cells.length <= round) {
+        let th = document.createElement('th');
+        th.innerText = "R" + round;
+        hHead.appendChild(th);
+    }
+
+    // History Body
+    const hBody = document.getElementById('histBody');
+    hBody.innerHTML = teams.map(t => `
+        <tr>
+            <td><strong>${t.name}</strong></td>
+            ${t.log.map(l => `<td>${l.choice} (${l.pts})</td>`).join('')}
+        </tr>`).join('');
+}
+
+function checkEnd() {
+    let scores = teams.map(t => t.score);
+    let unique = new Set(scores);
+    if (unique.size === 8) {
+        done = true;
+        document.getElementById('winMsg').style.display = 'block';
+        document.getElementById('subBtn').disabled = true;
+        let sorted = [...teams].sort((a,b) => b.score - a.score);
+        document.getElementById('winnerLine').innerText = "Winner: " + sorted[0].name;
+        alert("Success! All teams have different scores.");
+    }
+}
+
+function reset() {
+    if (confirm("Reset everything?")) location.reload();
+}
+
+setup();
+</script>
+</body>
+</html>
