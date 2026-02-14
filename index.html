@@ -48,7 +48,6 @@
             font-size: 1.1rem;
         }
 
-        /* Responsive Grid: 2 columns on mobile, 4 on desktop */
         .input-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -125,7 +124,6 @@
             border-radius: 8px;
         }
 
-        /* Table Responsiveness */
         .table-wrapper {
             width: 100%;
             overflow-x: auto;
@@ -158,7 +156,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Enactus Mini Game-4</h1>
+            <h1>Enactus Mini Game-1</h1>
             <div class="round-box">Round: <span id="roundDisp">1</span></div>
         </div>
 
@@ -197,7 +195,6 @@
     </div>
 
     <script>
-        // LOGIC REMAINS 100% UNCHANGED
         let round = 1;
         let done = false;
         let teams = Array.from({length: 8}, (_, i) => ({ id: i+1, name: "Team "+(i+1), score: 0, log: [] }));
@@ -206,7 +203,8 @@
             const grid = document.getElementById('grid');
             grid.innerHTML = '';
             teams.forEach(t => {
-                grid.innerHTML += `<div class="team-input"><label>${t.name}</label><input id="t${t.id}" maxlength="1" placeholder="?" inputmode="text"></div>`;
+                // Placeholder updated to guide players
+                grid.innerHTML += `<div class="team-input"><label>${t.name}</label><input id="t${t.id}" maxlength="1" placeholder="R/G/B" inputmode="text"></div>`;
             });
             updateUI();
         }
@@ -214,16 +212,20 @@
         function runRound() {
             if (done) return;
             let selections = {};
-            let counts = { X: 0, Y: 0, Z: 0 };
+            // Updated counts object for R, G, B
+            let counts = { R: 0, G: 0, B: 0 }; 
+
             for (let i = 1; i <= 8; i++) {
                 let val = document.getElementById('t'+i).value.toUpperCase().trim();
-                if (!['X','Y','Z'].includes(val)) {
-                    alert("Error: Team "+i+" must enter X, Y, or Z");
+                // Validation logic updated for new variables
+                if (!['R','G','B'].includes(val)) {
+                    alert("Error: Team "+i+" must enter R, G, or B");
                     return;
                 }
                 selections[i] = val;
                 counts[val]++;
             }
+
             let activeCounts = Object.entries(counts).filter(([opt, count]) => count > 0);
             let minNum = Math.min(...activeCounts.map(([opt, count]) => count));
             let winners = activeCounts.filter(([opt, count]) => count === minNum).map(([opt, count]) => opt);
