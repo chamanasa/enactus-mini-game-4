@@ -158,7 +158,7 @@
     <div class="container">
         <div class="header">
             <h1>Enactus Mini Game-1</h1>
-            <div class="round-box">Round: <span id="roundDisp">1</span>/6</div>
+            <div class="round-box">Round: <span id="roundDisp">1</span>/8</div>
         </div>
 
         <div id="winMsg" class="victory">
@@ -207,7 +207,8 @@
 
     <script>
         let round = 1;
-        const MAX_ROUNDS = 6;
+        // Updated constant from 6 to 8
+        const MAX_ROUNDS = 8;
         let done = false;
         
         let teams = Array.from({length: 8}, (_, i) => ({ 
@@ -275,8 +276,6 @@
         }
 
         function getFirstRoundAtScore(team) {
-            // Find the index of the first time their current total score appears in history
-            // index 0 = Round 1, so we add 1
             const firstIdx = team.history.indexOf(team.score);
             return firstIdx === -1 ? round : firstIdx + 1;
         }
@@ -288,10 +287,9 @@
                 if (b.count3 !== a.count3) return b.count3 - a.count3;
                 if (b.count1 !== a.count1) return b.count1 - a.count1;
                 
-                // Final Tiebreaker: Earliest round to reach current total
                 let roundA = getFirstRoundAtScore(a);
                 let roundB = getFirstRoundAtScore(b);
-                if (roundA !== roundB) return roundA - roundB; // Lower round is better
+                if (roundA !== roundB) return roundA - roundB;
                 
                 return a.id - b.id; 
             });
